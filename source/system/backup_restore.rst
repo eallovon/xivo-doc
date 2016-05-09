@@ -49,6 +49,7 @@ Here is the list of folders and files that are backed-up:
 
 * :file:`/etc/asterisk/`
 * :file:`/etc/consul/`
+* :file:`/etc/crontab`
 * :file:`/etc/dahdi/`
 * :file:`/etc/dhcp/`
 * :file:`/etc/hostname`
@@ -57,8 +58,10 @@ Here is the list of folders and files that are backed-up:
 * :file:`/etc/network/if-up.d/xivo-routes`
 * :file:`/etc/network/interfaces`
 * :file:`/etc/ntp.conf`
+* :file:`/etc/profile.d/xivo_uuid.sh`
 * :file:`/etc/resolv.conf`
 * :file:`/etc/ssl/`
+* :file:`/etc/systemd/`
 * :file:`/etc/wanpipe/`
 * :file:`/etc/xivo-agentd/`
 * :file:`/etc/xivo-agid/`
@@ -75,6 +78,7 @@ Here is the list of folders and files that are backed-up:
 * :file:`/etc/xivo-purge-db/`
 * :file:`/etc/xivo-websocketd/`
 * :file:`/etc/xivo/`
+* :file:`/usr/local/bin/`
 * :file:`/usr/local/sbin/`
 * :file:`/usr/share/xivo/XIVO-VERSION`
 * :file:`/var/lib/asterisk/`
@@ -83,6 +87,7 @@ Here is the list of folders and files that are backed-up:
 * :file:`/var/lib/xivo/`
 * :file:`/var/log/asterisk/`
 * :file:`/var/spool/asterisk/`
+* :file:`/var/spool/cron/crontabs/`
 
 The following files/folders are excluded from this backup:
 
@@ -91,6 +96,10 @@ The following files/folders are excluded from this backup:
   * :file:`/var/lib/xivo-provd/plugins/*/var/cache/*`
   * :file:`/var/spool/asterisk/monitor/`
   * :file:`/var/spool/asterisk/meetme/`
+
+* files
+
+  * :file:`/var/lib/xivo-provd/plugins/xivo-polycom*/var/tftpboot/*.ld`
 
 * log files, coredump files
 * audio recordings
@@ -237,6 +246,13 @@ Drop the asterisk database and restore it with the one from the backup::
    sudo -u postgres pg_restore -C -d postgres asterisk-*.dump
 
 
+Troubleshooting
+---------------
+
+When restoring the database, if you encounter problems related to the system locale, see
+:ref:`postgresql_localization_errors`.
+
+
 Restoring and Keeping System Configuration
 ==========================================
 
@@ -284,6 +300,12 @@ After Restoring The System
 Resynchronize the xivo-auth keys::
 
    xivo-update-keys
+
+Update systemd runtime configuration::
+
+   source /etc/profile.d/xivo_uuid.sh
+   systemctl set-environment XIVO_UUID=$XIVO_UUID
+   systemctl daemon-reload
 
 Restart the services you stopped in the first step::
 

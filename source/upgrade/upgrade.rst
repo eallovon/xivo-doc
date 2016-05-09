@@ -8,8 +8,8 @@ Upgrading a XiVO is done by executing commands through a terminal on the
 server. You can connect to the server either through SSH or with a physical
 console.
 
-To upgrade your XiVO to the latest version, you **must** use the `xivo-upgrade`
-script. You can start an upgrade with the command::
+To upgrade your XiVO to the latest version, you **must** use the ``xivo-upgrade`` script. You can
+start an upgrade with the command::
 
    xivo-upgrade
 
@@ -27,43 +27,36 @@ There are 2 options you can pass to xivo-upgrade:
 * ``-d`` to only download packages without installing them. **This will still upgrade the package containing xivo-upgrade and xivo-service**.
 * ``-f`` to force upgrade, without asking for user confirmation
 
-.. warning::
 
-   If xivo-upgrade fails or aborts in mid-process, the system might end up in a
-   faulty condition. If in doubt, run the following command to check the current
-   state of xivo's firewall rules::
+``xivo-upgrade`` uses the following environment variables:
 
-      iptables -nvL
-
-   If, among others, it displays something like the following line (notice the
-   DROP and 5060) ::
-
-      0     0 DROP       udp  --  *      *       0.0.0.0/0            0.0.0.0/0           udp dpt:5060
-
-   Then your XiVO will not be able to register any SIP phones. In this case, you
-   must delete the DROP rules with the following command::
-
-      iptables -D INPUT -p udp --dport 5060 -j DROP
-
-   Repeat this command until no more unwanted rules are left.
+* ``XIVO_CONFD_PORT`` to set the port used to query the :ref:`HTTP API of xivo-confd <confd-api>`
+  (default is 9486)
 
 
-Preparing for an Upgrade
-========================
+Upgrade procedure
+=================
 
 * Consult the `roadmaps <https://projects.xivo.io/projects/xivo/roadmap?tracker_ids%5B%5D=1&tracker_ids%5B%5D=2&completed=1>`_ starting from your current version to the current prod version.
-* Read all existing Upgrade Notes (see below) starting from your version to the current prod version.
-* For custom setups, follow the required procedures described below (example : cluster).
-* To download the packages beforehand, run ``xivo-upgrade -d``. This is not necessary, but useful for upgrading more quickly prior to stopping telephone services.
-* When ready, run ``xivo-upgrade`` which will start the upgrade process. **Telephone services will be stopped during the process**
-* When finished, check that the services are running :
+* Read all existing Upgrade Notes (see below) starting from your version to the latest version.
+* For custom setups, follow the required procedures described below (e.g. HA cluster).
+* To download the packages beforehand, run ``xivo-upgrade -d``. This is not mandatory, but it does
+  not require stopping any service, so it may be useful to reduce the downtime of the server while
+  upgrading.
+* When ready, run ``xivo-upgrade`` which will start the upgrade process. **Telephony services will
+  be stopped during the process**
+* When finished, check that all services are running (the list is displayed at the end of the upgrade).
+* Check that services are correctly working like SIP registration, ISDN link status,
+  internal/incoming/outgoing calls, XiVO Client connections etc.
 
- * with ``xivo-service status`` command,
- * and with actual checks like SIP registration, ISDN links status, internal/incoming/outgoing calls, XiVO Client connections etc.
 
+.. _version_specific_upgrade:
+
+Version-specific upgrade procedures
+===================================
 
 Upgrading from XiVO 14.01, 14.02, 14.03, 14.04 installed from the ISO
-=====================================================================
+---------------------------------------------------------------------
 
 In those versions, xivo-upgrade keeps XiVO on the same version. You must do the following, before
 the normal upgrade::
@@ -75,8 +68,30 @@ the normal upgrade::
    && apt-get update
 
 
+Upgrading from XiVO 13.24 and before
+------------------------------------
+
+When upgrading from XiVO 13.24 or earlier, you must do the following, before the normal upgrade:
+
+#. Ensure that the file :file:`/etc/apt/sources.list` is *not* configured on ``archive.debian.org``.
+   Instead, it must be configured with a non-archive mirror, but still on the ``squeeze``
+   distribution, even if it is not present on this mirror. For example::
+
+    deb http://ftp.us.debian.org/debian squeeze main
+
+#. Add ``archive.debian.org`` in another file::
+
+    cat > /etc/apt/sources.list.d/squeeze-archive.list <<EOF
+    deb http://archive.debian.org/debian/ squeeze main
+    EOF
+
+And after the upgrade::
+
+   rm /etc/apt/sources.list.d/squeeze-archive.list
+
+
 Upgrading from XiVO 13.03 and before
-====================================
+------------------------------------
 
 When upgrading from XiVO 13.03 or earlier, you must do the following, before the normal upgrade::
 
@@ -84,7 +99,7 @@ When upgrading from XiVO 13.03 or earlier, you must do the following, before the
 
 
 Upgrading from XiVO 12.13 and before
-====================================
+------------------------------------
 
 When upgrading from XiVO 12.13 or earlier, you must do the following, before the normal upgrade::
 
@@ -93,7 +108,7 @@ When upgrading from XiVO 12.13 or earlier, you must do the following, before the
 
 
 Upgrading from XiVO 1.2.1 and before
-====================================
+------------------------------------
 
 Upgrading from 1.2.0 or 1.2.1 requires a special procedure before executing ``xivo-upgrade``::
 
@@ -103,10 +118,10 @@ Upgrading from 1.2.0 or 1.2.1 requires a special procedure before executing ``xi
 
 .. _upgrading-a-cluster:
 
-Upgrading a Cluster
+Upgrading a cluster
 ===================
 
-Here are the steps for upgrading a cluster:
+Here are the steps for upgrading a cluster, i.e. two XiVO with :ref:`high-availability`:
 
 #. On the master : deactivate the database replication by commenting the cron in
    :file:`/etc/cron.d/xivo-ha-master`
@@ -145,8 +160,76 @@ Upgrading from i386 (32 bits) to amd64 (64 bits)
    migrate_i386_to_amd64
 
 
+Troubleshooting
+===============
+
+Postgresql
+----------
+
+When upgrading XiVO, if you encounter problems related to the system locale, see
+:ref:`postgresql_localization_errors`.
+
+
+xivo-upgrade
+------------
+
+If xivo-upgrade fails or aborts in mid-process, the system might end up in a faulty condition. If in
+doubt, run the following command to check the current state of xivo's firewall rules::
+
+   iptables -nvL
+
+If, among others, it displays something like the following line (notice the DROP and 5060)::
+
+   0     0 DROP       udp  --  *      *       0.0.0.0/0            0.0.0.0/0           udp dpt:5060
+
+Then your XiVO will not be able to register any SIP phones. In this case, you must delete the DROP
+rules with the following command::
+
+   iptables -D INPUT -p udp --dport 5060 -j DROP
+
+Repeat this command until no more unwanted rules are left.
+
+
 Upgrade Notes
 =============
+
+16.05
+-----
+
+Consult the `16.05 Roadmap <https://projects.xivo.io/versions/241>`_
+
+* The ``view``, ``add``, ``edit``, ``delete`` and ``deleteall`` actions of the "lines" web service
+  provided by the web interface have been removed.  As a reminder, note that the web services
+  provided by the web interface are deprecated.
+
+
+16.04
+-----
+
+Consult the `16.04 Roadmap <https://projects.xivo.io/versions/240>`_
+
+* :ref:`cti-protocol` is now in version *2.1*
+* The field :guilabel:`Rightcall Code` from :menuselection:`Services -> IPBX -> IPBX Settings ->
+  Users` under :guilabel:`Services` tab  will overwrite all password call permissions for the user.
+* Faxes stored on FTP servers are now converted to PDF by default. See :ref:`fax-ftp` if you want
+  to keep the old behavior of storing faxes as TIFF files.
+
+
+16.03
+-----
+
+Consult the `16.03 Roadmap <https://projects.xivo.io/versions/239>`_
+
+* The new section :menuselection:`Services --> Statistics --> Switchboard` in the web interface will
+  only be visible by a non-root administrator after adding the corresponding permissions in the
+  administrator configuration.
+* Update the switchboard configuration page for the statistics in
+  :ref:`switchboard_configuration_multi_queues`.
+* The API for associating a line to a device has been replaced. Consult the :ref:`confd_changelog` for further details
+* The configuration parameters of *xivo_ldap_user* plugin of *xivo-auth* has been changed. See
+  :ref:`xivo_ldap plugin <auth-backends-ldap>`.
+* The user's email is now a unique constraint. Every duplicate email will be deleted during
+  the migration. (This does not apply to the voicemail's email)
 
 
 16.02

@@ -82,6 +82,8 @@ Things to be aware when writing a client/consumer:
   that are still in queues will be lost.
 
 
+.. _bus-events:
+
 Events
 ======
 
@@ -92,10 +94,15 @@ Events that are sent to the bus use a JSON serialization format with the content
      "origin_uuid": "ca7f87e9-c2c8-5fad-ba1b-c3140ebb9be3",
      "data": {...}}
 
-All events have the same basic structure, namely, a JSON object with three keys:
+All events have the same basic structure, namely, a JSON object with 4 keys:
 
 name
     A string representing the name of the event. Each event type has a unique name.
+
+required_acl (optional)
+    Either a string or null. Currently used by xivo-websocketd to determine if
+    a client can receive the event or not. See the :ref:`ws-events-acl` section for
+    more information.
 
 origin_uuid
     The uuid to identify the message producer.
@@ -174,6 +181,7 @@ agent_status_update
 The agent_status_update is sent when an agent is logged in or logged out.
 
 * routing key: status.agent
+* required ACL: events.statuses.agents
 * event specific data: a dictionary with 3 keys:
 
   * agent_id: an integer corresponding to the agent ID of the agent who's status changed
@@ -184,6 +192,7 @@ Example::
 
    {
        "name": "agent_status_update",
+       "required_acl": "events.statuses.agents",
        "origin_uuid": "ca7f87e9-c2c8-5fad-ba1b-c3140ebb9be3",
        "data": {
            "agent_id": 42,
@@ -193,6 +202,8 @@ Example::
    }
 
 
+.. _bus-call_created:
+
 call_created, call_updated, call_ended
 --------------------------------------
 
@@ -200,6 +211,7 @@ The events ``call_created``, ``call_updated``, ``call_ended`` are sent when a ca
 xivo-ctid-ng is received, connected or hung up.
 
 * routing key: calls.call.created, calls.call.updated, call.call.ended
+* required ACL: events.calls.<user_uuid>
 * event specific data: a dictionary with the same fields as the REST API model of Call (See
   http://api.xivo.io, section xivo-ctid-ng)
 
@@ -207,6 +219,7 @@ Example::
 
    {
        "name": "call_created",
+       "required_acl": "events.calls.2e752722-0864-4665-887d-a78a024cf7c7",
        "origin_uuid": "08c56466-8f29-45c7-9856-92bf1ba89b82",
        "data": {
            "bridges": [],
@@ -232,22 +245,25 @@ This message is used to send a chat message to a user
 * event specific data:
 
   * alice: The nickname of the chatter
-  * to: The destination's XiVO UUID and user ID
-  * from: The chatter's XiVO UUID and user ID
+  * to: The destination's XiVO UUID and user UUID
+  * from: The chatter's XiVO UUID and user UUID
   * msg: The message
 
-Example::
+Example:
+
+.. code-block:: javascript
 
   {
       "name": "chat_message_event",
       "origin_uuid": "ca7f87e9-c2c8-5fad-ba1b-c3140ebb9be3",
       "data": {
           "alias": "Alice"
-          "to": ["ca7f87e9-c2c8-5fad-ba1b-c3140ebb9be3", 42],
-          "from": ["ca7f87e9-c2c8-5fad-ba1b-c3140ebb9be3", 22],
+          "to": ["ca7f87e9-c2c8-5fad-ba1b-c3140ebb9be3", "fcb36731-c50a-453e-92c7-571297d41616"],
+          "from": ["ca7f87e9-c2c8-5fad-ba1b-c3140ebb9be3", "4f2e2249-ae2b-4bc2-b5fc-ad42ee01ddaf"],
           "msg": "Hi!"
       }
   }
+
 
 .. _bus-endpoint_status_update:
 
@@ -258,6 +274,7 @@ The endpoint_status_update is sent when an end point status changes. This inform
 based on asterisk hints.
 
 * routing key: status.endpoint
+* required ACL: events.statuses.endpoints
 * event specific data: a dictionary with 3 keys
 
   * xivo_id: the uuid of the xivo
@@ -268,6 +285,7 @@ Example::
 
    {
        "name": "endpoint_status_update",
+       "required_acl": "events.statuses.endpoints",
        "origin_uuid": "ca7f87e9-c2c8-5fad-ba1b-c3140ebb9be3",
        "data": {
            "endpoint_id": 67,
@@ -285,6 +303,7 @@ user_status_update
 The user_status_update is sent when a user changes his CTI presence using the XiVO client.
 
 * routing key: status.user
+* required ACL: events.statuses.users
 * event specific data: a dictionary with 3 keys
 
   * xivo_id: the uuid of the xivo
@@ -295,11 +314,79 @@ Example::
 
    {
        "name": "user_status_update",
+       "required_acl": "events.statuses.users",
        "origin_uuid": "ca7f87e9-c2c8-5fad-ba1b-c3140ebb9be3",
        "data": {
            "user_id": 42,
            "xivo_id": "ca7f87e9-c2c8-5fad-ba1b-c3140ebb9be3",
            "status": "busy"
+       }
+   }
+
+
+.. _bus-users_forwards_forward_updated:
+
+users_forwards_<forward_name>_updated
+-------------------------------------
+
+The users_forwards_<forward_name>_updated is sent when a user changes his forward using REST API.
+
+* forward_name:
+
+  * busy
+  * noanswer
+  * unconditional
+
+* routing key: config.users.<user_uuid>.forwards.<forward_name>.updated
+* required ACL: events.config.users.<user_uuid>.forwards.<forward_name>.updated
+* event specific data: a dictionary with 3 keys
+
+  * user_uuid: the user uuid
+  * enabled: the state of the forward
+  * destination: the destination of the forward
+
+Example::
+
+   {
+       "name": "users_forwards_busy_updated",
+       "required_acl": "events.config.users.a1223fe6-bff8-4fb6-a982-f9157dea5094.forwards.busy.updated",
+       "origin_uuid": "ca7f87e9-c2c8-5fad-ba1b-c3140ebb9be3",
+       "data": {
+           "user_uuid": "a1223fe6-bff8-4fb6-a982-f9157dea5094",
+           "enabled": true
+           "destination": "1234"
+       }
+   }
+
+
+.. _bus-users_services_service_updated:
+
+users_services_<service_name>_updated
+-------------------------------------
+
+The users_services_<service_name>_updated is sent when a user changes his service using REST API.
+
+* service_name:
+
+  * dnd
+  * incallfilter
+
+* routing key: config.users.<user_uuid>.services.<service_name>.updated
+* required ACL: events.config.users.<user_uuid>.services.<service_name>.updated
+* event specific data: a dictionary with 2 keys
+
+  * user_uuid: the user uuid
+  * enabled: the state of the service
+
+Example::
+
+   {
+       "name": "users_services_dnd_updated",
+       "required_acl": "events.config.users.a1223fe6-bff8-4fb6-a982-f9157dea5094.services.dnd.updated",
+       "origin_uuid": "ca7f87e9-c2c8-5fad-ba1b-c3140ebb9be3",
+       "data": {
+           "user_uuid": "a1223fe6-bff8-4fb6-a982-f9157dea5094",
+           "enabled": true
        }
    }
 

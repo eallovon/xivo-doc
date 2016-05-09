@@ -4,6 +4,88 @@
 xivo-confd REST API changelog
 *****************************
 
+16.06
+=====
+
+* A new API for initializing a XiVO (passing the wizard):
+
+  * GET ``/1.1/wizard``
+  * POST ``/1.1/wizard``
+  * GET ``/1.1/wizard/discover``
+
+
+16.05
+=====
+
+* A new API for associating a user with a call permission has been added:
+
+  * GET ``/1.1/users/<user_id>/callpermissions``
+  * PUT ``/1.1/users/<user_id>/callpermissions/<call_permission_id>``
+  * DELETE ``/1.1/users/<user_id>/callpermissions/<call_permission_id>``
+  * GET ``/1.1/callpermissions/<call_permission_id>/users``
+
+* Two new parameters have been added to the users resource:
+
+  * ``call_permission_password``
+  * ``enabled``
+
+* A new API for user's forwards has been added:
+
+  * PUT ``/1.1/users/<user_id>/forwards``
+
+* SIP endpoint: ``allow`` and ``disallow`` options are not split into multiple options anymore.
+* SCCP endpoint: ``allow`` and ``disallow`` options are not split into multiple options anymore.
+
+
+16.04
+=====
+
+* The ``summary`` view has been added to ``/users`` (GET ``/users?view=summary``)
+
+* A new API for user's services has been added:
+
+  * GET ``/1.1/users/<user_id>/services``
+  * GET ``/1.1/users/<user_id>/services/<service_name>``
+  * PUT ``/1.1/users/<user_id>/services/<service_name>``
+
+* A new API for user's forwards has been added:
+
+  * GET ``/1.1/users/<user_id>/forwards``
+  * GET ``/1.1/users/<user_id>/forwards/<forward_name>``
+  * PUT ``/1.1/users/<user_id>/forwards/<forward_name>``
+
+* GET ``/1.1/users/export`` now requires the following header for CSV output::
+
+   Accept: text/csv; charset=utf-8
+
+* Added call permissions endpoints:
+
+  * GET ``/1.1/callpermissions``
+  * POST ``/1.1/callpermissions``
+  * GET ``/1.1/callpermissions/<callpermission_id>``
+  * PUT ``/1.1/callpermissions/<callpermission_id>``
+  * DELETE ``/1.1/callpermissions/<callpermission_id>``
+
+
+16.03
+=====
+
+* Added switchboard endpoints:
+
+  * GET ``/1.1/switchboards``
+  * GET ``/1.1/switchboards/<switchboard_id>/stats``
+
+* A new API for associating a line with a device has been added:
+
+  * PUT ``/1.1/lines/<line_id>/devices/<device_id>``
+  * DELETE ``/1.1/lines/<line_id>/devices/<device_id>``
+
+* The following URLs have been deleted. Please use the new API instead:
+
+  * GET ``/1.1/devices/<device_id>/associate_line/<line_id>``
+  * GET ``/1.1/devices/<device_id>/dissociate_line/<line_id>``
+
+
 16.02
 =====
 
